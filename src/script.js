@@ -1,10 +1,13 @@
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import * as dat from 'dat.gui'
 
-// Debug
-const gui = new dat.GUI()
+
+//Texture loader
+/*
+const loader = new THREE.TextureLoader();
+const cross = loader.load("cross.png");*/
+
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -14,15 +17,36 @@ const scene = new THREE.Scene()
 
 // Objects
 const geometry = new THREE.TorusGeometry( .7, .2, 16, 100 );
+const particlesGeometry = new THREE.BufferGeometry;
+const particlesCnt = 5000;
+
+const posArray = new Float32Array(particlesCnt * 3);
+for (let i=0; i<particlesCnt*3; i++){
+    //posArray[i] = Math.random();
+    posArray[i] = (Math.random()-.5) * 5;
+}
+
+particlesGeometry.setAttribute("position", new THREE.BufferAttribute(posArray, 3));
+
 
 // Materials
 
-const material = new THREE.MeshBasicMaterial()
-material.color = new THREE.Color(0xff0000)
+const material = new THREE.PointsMaterial({
+    size: 0.005,
+    color: "red"
+})
+
+/*
+const particlesMaterial = new THREE.PointsMaterial({
+    size: .005,
+    map: cross,
+    transparent: true
+})*/
 
 // Mesh
-const sphere = new THREE.Mesh(geometry,material)
-scene.add(sphere)
+const sphere = new THREE.Points(geometry,material);
+const particlesMesh = new THREE.Points(particlesGeometry, material);
+scene.add(sphere, particlesMesh)
 
 // Lights
 
@@ -76,30 +100,53 @@ const renderer = new THREE.WebGLRenderer({
     canvas: canvas
 })
 renderer.setSize(sizes.width, sizes.height)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(new THREE.Color("#21282a"), 1);
 
 /**
  * Animate
  */
 
-const clock = new THREE.Clock()
+let mouse={
+    x:0,
+    y:0
+}
+
+function animateParticles(event){
+    mouse.x = event.clientX;
+    mouse.y = event.clientY;
+}
+
+//Mouse
+document.addEventListener("mousemove", animateParticles);
+
+
+const clock = new THREE.Clock();
 
 const tick = () =>
 {
 
-    const elapsedTime = clock.getElapsedTime()
+    const elapsedTime = clock.getElapsedTime();
 
     // Update objects
-    sphere.rotation.y = .5 * elapsedTime
+    sphere.rotation.y = .5 * elapsedTime;
+
+    particlesMesh.rotation.y = -.1 * elapsedTime;
+
+    if (mouse.x>0){
+        
+    particlesMesh.rotation.x = -1*  mouse.y * (elapsedTime * .00005);
+    particlesMesh.rotation.y = -1*  mouse.x * (elapsedTime * .00005);
+    }
 
     // Update Orbital Controls
     // controls.update()
 
     // Render
-    renderer.render(scene, camera)
+    renderer.render(scene, camera);
 
     // Call tick again on the next frame
-    window.requestAnimationFrame(tick)
+    window.requestAnimationFrame(tick);
 }
 
 tick()
